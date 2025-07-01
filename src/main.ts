@@ -34,7 +34,9 @@ await Actor.init();
 const { startUrls = ['https://oddspedia.com/surebets'], maxRequestsPerCrawl = 10 } =
     (await Actor.getInput<Input>()) ?? ({} as Input);
 
-const proxyConfiguration = await Actor.createProxyConfiguration();
+const proxyConfiguration = await Actor.createProxyConfiguration({
+    countryCode: 'US',
+});
 
 const crawler = new PlaywrightCrawler({
     proxyConfiguration,
