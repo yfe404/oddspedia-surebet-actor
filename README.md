@@ -1,65 +1,159 @@
-## PlaywrightCrawler template
+# Surebet Arbitrage Scraper
 
-This template is a production-ready boilerplate for developing an [Actor](https://apify.com/actors) with `PlaywrightCrawler`. It has [Camoufox](https://github.com/daijro/camoufox) - a stealthy fork of Firefox - preinstalled. Note that Camoufox might consume more resources than the default Playwright-bundled Chromium or Firefox.
+An Apify Actor that:
 
-Use this template to bootstrap your projects using the most up-to-date code.
+✅ Crawls surebet pages
+✅ Parses sports events and odds using Cheerio
+✅ Calculates surebet allocations and guaranteed profits
+✅ Saves results into an Apify Dataset for easy export (JSON, CSV, XLSX)
 
-> We decided to split Apify SDK into two libraries, Crawlee and Apify SDK v3. Crawlee will retain all the crawling and scraping-related tools and will always strive to be the best [web scraping](https://apify.com/web-scraping) library for its community. At the same time, Apify SDK will continue to exist, but keep only the Apify-specific features related to building Actors on the Apify platform. Read the upgrading guide to learn about the changes.
+---
 
-## Resources
+## 🚀 How It Works
 
-If you're looking for examples or want to learn more visit:
+This actor:
 
-- [Crawlee + Apify Platform guide](https://crawlee.dev/docs/guides/apify-platform)
-- [Documentation](https://crawlee.dev/api/playwright-crawler/class/PlaywrightCrawler) and [examples](https://crawlee.dev/docs/examples/playwright-crawler)
-- [Node.js tutorials](https://docs.apify.com/academy/node-js) in Academy
-- [Scraping single-page applications with Playwright](https://blog.apify.com/scraping-single-page-applications-with-playwright/)
-- [How to scale Puppeteer and Playwright](https://blog.apify.com/how-to-scale-puppeteer-and-playwright/)
-- [Integration with Zapier](https://apify.com/integrations), Make, GitHub, Google Drive and other apps
-- [Video guide on getting scraped data using Apify API](https://www.youtube.com/watch?v=ViYYDHSBAKM)
-- A short guide on how to build web scrapers using code templates:
+1. Loads HTML pages via Playwright
+2. Parses all surebet matches (e.g. Tennis, Football, MMA, etc.)
+3. Extracts:
+    - Sport
+    - Country
+    - League
+    - Date and time
+    - Market (e.g. Home/Away, Over/Under)
+    - Team or player names
+    - Odds and bookmakers
+4. Calculates surebet allocations for **2-way markets**:
+    - Stake split
+    - Total payout
+    - Guaranteed profit
+    - Surebet percentage
+5. Saves everything as JSON records in an Apify dataset.
 
-[web scraper template](https://www.youtube.com/watch?v=u-i-Korzf8w)
+---
 
+## 📦 Input
 
-## Getting started
+WIP
 
-For complete information [see this article](https://docs.apify.com/platform/actors/development#build-actor-locally). To run the Actor use the following command:
+---
 
-```bash
-apify run
+## ✅ Output
+
+The actor saves results to a dataset with fields:
+
+| Field      | Description                                   |
+| ---------- | --------------------------------------------- |
+| url        | Source page URL                               |
+| sport      | Sport name (e.g. Tennis, Football)            |
+| country    | Country or region                             |
+| league     | Tournament or league name                     |
+| date       | Match date and time                           |
+| market     | Market type (e.g. Home/Away, Over/Under)      |
+| home       | Home team or player                           |
+| away       | Away team or player                           |
+| outcomes   | List of odds and bookmakers for each outcome  |
+| allocation | Calculated surebet stakes and profit (if any) |
+
+Example dataset record:
+
+```json
+{
+  "url": "https://example.com",
+  "sport": "Tennis",
+  "country": "United Kingdom",
+  "league": "ATP Wimbledon",
+  "date": "1st Jul 25, 16:50",
+  "market": "Home/Away",
+  "home": "Jack Draper",
+  "away": "Sebastian Baez",
+  "outcomes": [
+    {
+      "outcome": "Home",
+      "odd": 2,
+      "broker": "tooniebet"
+    },
+    {
+      "outcome": "Away",
+      "odd": 34,
+      "broker": "boylesports"
+    }
+  ],
+  "allocation": {
+    "isSurebet": true,
+    "allocation": [
+      {
+        "outcome": "Home",
+        "broker": "tooniebet",
+        "odd": 2,
+        "stake": 94.44
+      },
+      {
+        "outcome": "Away",
+        "broker": "boylesports",
+        "odd": 34,
+        "stake": 5.56
+      }
+    ],
+    "payout": 188.89,
+    "profit": 88.89,
+    "surebetPercentage": 52.94
+  }
+}
 ```
 
-## Deploy to Apify
+---
 
-### Connect Git repository to Apify
+## 🛠 Configuration
 
-If you've created a Git repository for the project, you can easily connect to Apify:
+The actor logic lives in:
 
-1. Go to [Actor creation page](https://console.apify.com/actors/new)
-2. Click on **Link Git Repository** button
+* `main.ts` → Crawler logic and orchestration
+* `surebet.ts` → Calculation of surebet allocations
+* `routes.ts` → Request routing
 
-### Push project on your local machine to Apify
+---
 
-You can also deploy the project on your local machine to Apify without the need for the Git repository.
+## Limitations
 
-1. Log in to Apify. You will need to provide your [Apify API Token](https://console.apify.com/account/integrations) to complete this action.
+* Currently supports **2-way markets** only (Home/Away, Over/Under).
+* No handling of 3-way surebets (e.g. 1X2 with Draw) yet.
+* No built-in actor input schema—modify `main.ts` to change URLs or stake amount.
 
-    ```bash
-    apify login
-    ```
+---
 
-2. Deploy your Actor. This command will deploy and build the Actor on the Apify Platform. You can find your newly created Actor under [Actors -> My Actors](https://console.apify.com/actors?tab=my).
+## How to Run
 
-    ```bash
-    apify push
-    ```
+Locally:
 
-## Documentation reference
+```bash
+npm install
+npm run build
+npm start
+```
 
-To learn more about Apify and Actors, take a look at the following resources:
+Or deploy to Apify and run as an actor.
 
-- [Apify SDK for JavaScript documentation](https://docs.apify.com/sdk/js)
-- [Apify SDK for Python documentation](https://docs.apify.com/sdk/python)
-- [Apify Platform documentation](https://docs.apify.com/platform)
-- [Join our developer community on Discord](https://discord.com/invite/jyEM2PRvMU)
+---
+
+## Data Export
+
+On Apify, download results as:
+
+* JSON
+* CSV
+* Excel (XLSX)
+* NDJSON
+
+Via API:
+
+```
+https://api.apify.com/v2/datasets/<DATASET_ID>/items?format=json
+```
+
+---
+
+## License
+
+MIT
+
