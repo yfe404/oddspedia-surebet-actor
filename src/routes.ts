@@ -107,7 +107,7 @@ export function parseSurebets(html: string): SportEvent[] {
 }
 
 
-router.addDefaultHandler(async ({ enqueueLinks, log, page, pushData }) => {
+router.addDefaultHandler(async ({ page }) => {
     const html = await page.content();
     const events = parseSurebets(html);
 
