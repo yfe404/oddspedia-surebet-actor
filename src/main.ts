@@ -15,7 +15,6 @@ import { firefox } from 'playwright';
 // read more about this here: https://nodejs.org/docs/latest-v18.x/api/esm.html#mandatory-file-extensions
 // note that we need to use `.js` even when inside TS files
 import { router } from './routes.js';
-import { example } from './surebet.js';
 
 
 interface Input {
@@ -53,7 +52,6 @@ const crawler = new PlaywrightCrawler({
 });
 
 await crawler.run(startUrls);
-example(); // Call the example function to demonstrate surebet calculation
 
 // Exit successfully
 await Actor.exit();

@@ -10,7 +10,14 @@ export type Outcome = {
 
 export type SportEvent = {
   market: string;     // e.g. "Match Winner", "Total Goals Over/Under"
-  outcomes: [Outcome, Outcome];
+  sport: string;     // e.g. "Football", "Basketball"
+  league?: string;   // e.g. "Premier League", "NBA"
+  date?: string;       // Event date
+  home: string;    // Home team name
+  away: string;    // Away team name
+    country?: string; // Country of the event
+
+  outcomes: Outcome[];
 };
 
 export type SurebetResult = {
@@ -38,7 +45,15 @@ export function calculateSurebetAllocation(
   event: SportEvent,
   totalStake: number
 ): SurebetResult {
-  const [outcome1, outcome2] = event.outcomes;
+
+    if (event.outcomes.length !== 2) {
+    return {
+      isSurebet: false,
+      message: "Surebet calculation only supports exactly two outcomes.",
+    };
+  }
+
+  const [outcome1, outcome2] = event.outcomes as [Outcome, Outcome];
 
   const O1 = outcome1.odd;
   const O2 = outcome2.odd;
@@ -79,32 +94,4 @@ export function calculateSurebetAllocation(
     surebetPercentage: parseFloat((surebetPercentage * 100).toFixed(2)),
   };
 }
-
-/**
- * Example usage
- */
-export function example() {
-  const event: SportEvent = {
-    market: "Match Winner",
-    outcomes: [
-      {
-        outcome: "Home",
-        odd: 2.0,
-        broker: "BrokerA",
-      },
-      {
-        outcome: "Away",
-        odd: 34.0,
-        broker: "BrokerB",
-      }
-    ]
-  };
-
-  const result = calculateSurebetAllocation(event, 100);
-
-  console.log("Surebet calculation result:");
-  console.log(result);
-}
-// Uncomment to run the example directly
-// example();
 
