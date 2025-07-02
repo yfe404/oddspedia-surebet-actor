@@ -108,8 +108,33 @@ export function parseSurebets(html: string): SportEvent[] {
 
 
 router.addDefaultHandler(async ({ page }) => {
-    const html = await page.content();
-    const events = parseSurebets(html);
+
+
+    // 1) make sure the logo <img> elements exist
+await page.waitForSelector('.btools-odd-mini__logo img');
+
+// 2) scroll them into view so lazy-loading kicks in
+await page.evaluate(() => {
+  document
+    .querySelectorAll('.btools-odd-mini__logo img')
+    .forEach(img => img.scrollIntoView({ block: 'center' }));
+});
+
+// 3) wait until EVERY logo image is completely loaded
+await page.waitForFunction(() => {
+  const imgs = Array.from(
+    document.querySelectorAll<HTMLImageElement>('.btools-odd-mini__logo img')
+  );
+  return (
+    imgs.length > 0 &&
+    imgs.every(img => img.complete && img.naturalWidth > 0)
+  );
+}, { timeout: 15_000 });   // ← options are last
+
+  // 4 – now scrape
+  const html = await page.content();
+  const events = parseSurebets(html);
+
 
     for (const event of events) {
       console.log("─────────────");
