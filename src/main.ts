@@ -50,7 +50,6 @@ const crawler = new PlaywrightCrawler({
             headless: false,
             proxy: await proxyConfiguration?.newUrl(),
             geoip: true,
-            userData: { minProfitPercentage },
             // fonts: ['Times New Roman'] // <- custom Camoufox options
         }),
     },
