@@ -30,8 +30,6 @@ interface Input {
 // Initialize the Apify SDK
 await Actor.init();
 
-// Structure of input is defined in input_schema.json
-const { minProfitPercentage } = (await Actor.getInput<Input>()) ?? ({} as Input);
 
 let proxyConfiguration = undefined;
 

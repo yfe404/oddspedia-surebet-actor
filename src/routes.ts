@@ -1,4 +1,6 @@
 import { KeyValueStore, createPlaywrightRouter, Dataset } from 'crawlee';
+import { Actor } from 'apify';
+import type { Input } from './types.js';
 
 import { SportEvent, Outcome, calculateSurebetAllocation } from './surebet.js';
 export const router = createPlaywrightRouter();
@@ -107,7 +109,7 @@ export function parseSurebets(html: string): SportEvent[] {
   return events;
 }
 
-router.addDefaultHandler(async ({ page, request, log }) => {
+router.addDefaultHandler(async ({ page, log }) => {
     // Wait until Oddspedia injects sure-bet rows (15 s max)
     try {
         await page.waitForSelector('.btools-match', { timeout: 15_000 });
@@ -118,7 +120,8 @@ router.addDefaultHandler(async ({ page, request, log }) => {
 
     const html   = await page.content();
     const events = parseSurebets(html);
-    const { minProfitPercentage } = await KeyValueStore.getInput();
+    const input: Input = (await Actor.getInput()) ?? {};
+    const minProfitPercentage = input.minProfitPercentage ?? 1;
 
     //log minProfit Percentage from userData
     log.info(`Minimum profit percentage: ${minProfitPercentage}%`);
@@ -129,9 +132,9 @@ router.addDefaultHandler(async ({ page, request, log }) => {
     for (const event of events) {
         const result = calculateSurebetAllocation(event, stake);
 
-        if (!result.isSurebet) {
+        if (!result.isSurebet && result.message) {
             log.debug(result.message);
-            continue;                     // ← now inside loop → valid
+            continue;
         }
 
         const profitPct = (result.profit / stake) * 100;
