@@ -126,9 +126,6 @@ router.addDefaultHandler(async ({ page }) => {
       }
 
 
-
-  // Only handle 2-way markets for surebet allocation
-  if (event.outcomes.length === 2) {
     const allocation = calculateSurebetAllocation(event, 100);
 
     if (allocation.isSurebet) {
@@ -162,10 +159,6 @@ router.addDefaultHandler(async ({ page }) => {
     } else {
       console.log(`❌ No surebet found.`);
     }
-  } else {
-    console.log(`ℹ️ Skipped surebet calculation (more than 2 outcomes).`);
-  }
-
 
       console.log("─────────────\n");
     }
