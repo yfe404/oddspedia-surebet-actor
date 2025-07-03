@@ -14,56 +14,31 @@ export type OddsFormat =
   | 'indonesian'
   | 'malay';
 
-/**
- * Best‑effort detection of the notation used for one odds price.
- * Supported: Decimal, Fractional, American/Moneyline, Hong‑Kong, Indonesian, Malay.
- *
- * @param odd – raw odds value as string or number
- */
+/** Detect the notation used for one odds price. */
 export function detectOddsFormat(odd: string | number): OddsFormat {
-  // Handle obvious string patterns first -----------------------------------
+  // String patterns first --------------------------------------------------
   if (typeof odd === 'string') {
     const trimmed = odd.trim();
 
-    // 4/5 or 11 / 4  → Fractional
-    if (/^\d+\s*\/\s*\d+$/.test(trimmed)) return 'fractional';
-    // +150  –125     → American / Moneyline
-    if (/^[+-]\d+$/.test(trimmed)) return 'american';
+    if (/^\d+\s*\/\s*\d+$/.test(trimmed)) return 'fractional'; // 4/5
+    if (/^[+-]\d+$/.test(trimmed)) return 'american';              // –125, +150
 
     odd = parseFloat(trimmed);
     if (Number.isNaN(odd)) throw new Error(`Invalid odds value: ${trimmed}`);
   }
 
-  // From here on we have a number ------------------------------------------
+  // Numeric heuristics -----------------------------------------------------
   const n = odd as number;
+  if (n >= 1) return 'decimal';             // 1.80
+  if (n > 0 && n < 1) return 'hongkong';    // 0.80 (HK|Malay +)
 
-  if (n >= 1) {
-    // Plain unsigned numbers ≥ 1 are overwhelmingly used as Decimal odds.
-    return 'decimal';
-  }
-
-  if (n > 0 && n < 1) {
-    // Positive sub‑1 odds are either Hong‑Kong or Malay (+) – conversion is the same.
-    return 'hongkong';
-  }
-
-  // n < 0 ------------------------------------------------------------------
   const abs = Math.abs(n);
-
-  if (abs >= 100) {
-    return 'american'; // –125 etc.
-  }
-  if (abs > 1) {
-    return 'indonesian'; // –1.25 etc.
-  }
-  return 'malay'; // –0.80 etc.
+  if (abs >= 100) return 'american';        // –125
+  if (abs > 1) return 'indonesian';         // –1.25
+  return 'malay';                           // –0.80
 }
 
-/**
- * Converts any supported odds notation to *Decimal* odds.
- *
- * @param odd – raw odds as string or number
- */
+/** Convert any supported odds notation to *Decimal* odds. */
 export function toDecimal(odd: string | number): number {
   const format = detectOddsFormat(odd);
 
@@ -105,8 +80,8 @@ export function toDecimal(odd: string | number): number {
 // ────────────────────────────────────────────────────────────
 
 export type Outcome = {
-  outcome: string;           // e.g. "Home", "Away", "Over 2.5"
-  odd: number | string;      // Accept any notation – will be normalised later
+  outcome: string;           // e.g. "Home", "Away", "Over 2.5"
+  odd: number | string;      // Any notation – will be normalised later
   broker: string;
 };
 
@@ -132,51 +107,59 @@ export type SurebetResult = {
   }>;
   payout: number;
   profit: number;
-  surebetPercentage: number; // expressed as 0–100 %
+  surebetPercentage: number; // expressed as 0–100 %
   message?: string;
 };
 
 // ────────────────────────────────────────────────────────────
-//  Surebet stake allocator (2‑way markets)
+//  Sure‑bet stake allocator (2‑way markets)
 // ────────────────────────────────────────────────────────────
 
 /**
  * Calculates sure‑bet stake allocation for a 2‑way market.
  *
- * Any incoming odds are auto‑detected & converted to Decimal before maths.
+ * Incoming odds are auto‑detected & converted to Decimal before maths.
  *
  * @param event       Sport event containing exactly two outcomes
- * @param totalStake  Total bankroll to distribute (e.g. 100 €)
+ * @param totalStake  Total bankroll to distribute (e.g. 100 €)
  */
 export function calculateSurebetAllocation(
   event: SportEvent,
-  totalStake: number
+  totalStake: number,
 ): SurebetResult {
+  // Guard: must be exactly two outcomes -----------------------------------
   if (event.outcomes.length !== 2) {
     return {
       isSurebet: false,
+      payout: 0,
+      profit: 0,
+      surebetPercentage: 0,
       message: 'Sure‑bet calculation only supports exactly two outcomes.',
     };
   }
 
-  // Normalise odds to Decimal first ----------------------------------------
+  // Normalise odds to Decimal ---------------------------------------------
   const [raw1, raw2] = event.outcomes as [Outcome, Outcome];
   const O1 = toDecimal(raw1.odd);
   const O2 = toDecimal(raw2.odd);
 
-  const surebetPercentage = 1 / O1 + 1 / O2;
+  const surebetPercentage = 1 / O1 + 1 / O2; // < 1 ⇒ arbitrage
 
   if (surebetPercentage >= 1) {
     return {
       isSurebet: false,
-      message: 'No arbitrage opportunity for these odds.'
+      payout: 0,
+      profit: 0,
+      surebetPercentage: parseFloat((surebetPercentage * 100).toFixed(2)),
+      message: 'No arbitrage opportunity for these odds.',
     };
   }
 
+  // Stakes proportional to opposite odds ----------------------------------
   const stake1 = totalStake * (O2 / (O1 + O2));
   const stake2 = totalStake * (O1 / (O1 + O2));
 
-  const payout = stake1 * O1; // same for both outcomes
+  const payout = stake1 * O1; // equal on both outcomes
   const profit = payout - totalStake;
 
   return {
