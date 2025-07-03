@@ -28,9 +28,9 @@ export type SurebetResult = {
     odd: number;
     stake: number;
   }>;
-  payout?: number;
-  profit?: number;
-  surebetPercentage?: number;
+  payout: number;
+  profit: number;
+  surebetPercentage: number;
   message?: string;
 };
 
@@ -52,6 +52,7 @@ export function calculateSurebetAllocation(
       message: "Surebet calculation only supports exactly two outcomes.",
     };
   }
+
 
   const [outcome1, outcome2] = event.outcomes as [Outcome, Outcome];
 
