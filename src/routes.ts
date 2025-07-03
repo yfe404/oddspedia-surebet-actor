@@ -1,4 +1,5 @@
-import { createPlaywrightRouter, Dataset } from 'crawlee';
+import { KeyValueStore, createPlaywrightRouter, Dataset } from 'crawlee';
+
 import { SportEvent, Outcome, calculateSurebetAllocation } from './surebet.js';
 export const router = createPlaywrightRouter();
 import * as cheerio from "cheerio";
@@ -106,60 +107,47 @@ export function parseSurebets(html: string): SportEvent[] {
   return events;
 }
 
+router.addDefaultHandler(async ({ page, request, log }) => {
+    // Wait until Oddspedia injects sure-bet rows (15 s max)
+    try {
+        await page.waitForSelector('.btools-match', { timeout: 15_000 });
+    } catch {
+        log.warning('No .btools-match elements found – skipping page');
+        return;
+    }
 
-router.addDefaultHandler(async ({ page }) => {
-  const html = await page.content();
-  const events = parseSurebets(html);
+    const html   = await page.content();
+    const events = parseSurebets(html);
+    const { minProfitPercentage } = await KeyValueStore.getInput();
 
+    //log minProfit Percentage from userData
+    log.info(`Minimum profit percentage: ${minProfitPercentage}%`);
+
+    // default to 1 % if the value was not supplied
+    const stake  = 100;
 
     for (const event of events) {
-      console.log("─────────────");
-      console.log(`Sport   : ${event.sport}`);
-      console.log(`League  : ${event.league}`);
-      console.log(`Date    : ${event.date}`);
-      console.log(`Home    : ${event.home}`);
-      console.log(`Away    : ${event.away}`);
-      console.log(`Market  : ${event.market}`);
-      console.log("Outcomes:");
-      for (const o of event.outcomes) {
-        console.log(`  - ${o.outcome}: ${o.odd} @ ${o.broker}`);
-      }
+        const result = calculateSurebetAllocation(event, stake);
 
+        if (!result.isSurebet) {
+            log.debug(result.message);
+            continue;                     // ← now inside loop → valid
+        }
 
-    const allocation = calculateSurebetAllocation(event, 100);
+        const profitPct = (result.profit / stake) * 100;
 
-    if (allocation.isSurebet) {
-      console.log(`✅ SUREBET FOUND!`);
-      console.log(`Surebet %: ${allocation.surebetPercentage}%`);
-      console.log(`Total payout: $${allocation.payout}`);
-      console.log(`Guaranteed profit: $${allocation.profit}`);
-      console.log(`Recommended stakes:`);
+        if (profitPct < minProfitPercentage) {
+            log.debug(
+                `Edge ${profitPct.toFixed(2)} % < ${minProfitPercentage}% ➝ ignored`,
+            );
+            continue;
+        }
 
-      for (const alloc of allocation.allocation!) {
-        console.log(
-          `→ Bet $${alloc.stake} on [${alloc.outcome}] at ${alloc.odd} with ${alloc.broker}`
+        log.info(
+            `✅ ${event.home} vs ${event.away} — edge ${profitPct.toFixed(2)} %`,
         );
-      }
 
-      const result = {
-        sport: event.sport,
-        country: event.country,
-        league: event.league,
-        date: event.date,
-        market: event.market,
-        home: event.home,
-        away: event.away,
-        outcomes: event.outcomes,
-        allocation
-      };
-
-      await Dataset.pushData(result);
-      console.log(`✅ Saved event: ${event.home} vs ${event.away}`);
-
-    } else {
-      console.log(`❌ No surebet found.`);
-    }
-
-      console.log("─────────────\n");
+        await Dataset.pushData({ ...event, result });
     }
 });
+

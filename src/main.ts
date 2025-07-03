@@ -31,8 +31,7 @@ interface Input {
 await Actor.init();
 
 // Structure of input is defined in input_schema.json
-const { startUrls = ['https://oddspedia.com/surebets'], maxRequestsPerCrawl = 10 } =
-    (await Actor.getInput<Input>()) ?? ({} as Input);
+const { minProfitPercentage } = (await Actor.getInput<Input>()) ?? ({} as Input);
 
 let proxyConfiguration = undefined;
 
@@ -44,7 +43,6 @@ if (Actor.isAtHome()) {
 
 const crawler = new PlaywrightCrawler({
     proxyConfiguration,
-    maxRequestsPerCrawl,
     requestHandler: router,
     launchContext: {
         launcher: firefox,
@@ -52,12 +50,13 @@ const crawler = new PlaywrightCrawler({
             headless: false,
             proxy: await proxyConfiguration?.newUrl(),
             geoip: true,
+            userData: { minProfitPercentage },
             // fonts: ['Times New Roman'] // <- custom Camoufox options
         }),
     },
 });
 
-await crawler.run(startUrls);
+await crawler.run(['https://oddspedia.com/surebets']);
 
 // Exit successfully
 await Actor.exit();

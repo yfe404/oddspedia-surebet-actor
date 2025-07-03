@@ -1,19 +1,16 @@
 {
-    "title": "PlaywrightCrawler Template",
-    "type": "object",
-    "schemaVersion": 1,
-    "properties": {
-        "startUrls": {
-            "title": "Start URLs",
-            "type": "array",
-            "description": "URLs to start with.",
-            "editor": "requestListSources"
-        },
-        "maxRequestsPerCrawl": {
-            "title": "Max Requests per Crawl",
-            "type": "integer",
-            "description": "Maximum number of requests that can be made by this crawler.",
-            "default": 100
-        }
+  "title": "PlaywrightCrawler Template",
+  "type": "object",
+  "schemaVersion": 1,
+  "properties": {
+    "minProfitPercentage": {
+      "title": "Minimum Profit Percentage",
+      "type": "integer",
+      "description": "Ignore surebets whose expected profit is lower than this percentage of the total stake (e.g. 5 = 5 %).",
+      "default": 1,
+      "minimum": 0
     }
+  },
+  "required": ["minProfitPercentage"]
 }
+
