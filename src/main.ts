@@ -36,6 +36,7 @@ let proxyConfiguration = undefined;
 if (Actor.isAtHome()) {
         proxyConfiguration = await Actor.createProxyConfiguration({
         groups: ['RESIDENTIAL'],
+        countryCode: 'FR'
     });
 }
 
