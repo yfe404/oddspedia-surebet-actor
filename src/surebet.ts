@@ -1,5 +1,9 @@
 /**
  * Types and helpers for sports‑betting arbitrage calculation
+ *
+ * Revision 2 — adds sanity guards so that malformed odds (e.g. “11” that
+ * should have been +110 or 11/10) no longer slip through as decimal and
+ * create bogus sure‑bets.
  */
 
 // ────────────────────────────────────────────────────────────
@@ -14,65 +18,104 @@ export type OddsFormat =
   | 'indonesian'
   | 'malay';
 
+/**
+ * Internal guardrails – outside those ranges we assume the feed is wrong.
+ * Decimal odds under 1.01 pay negative/zero; over 20 are vanishingly rare
+ * in match markets and almost always signal a parsing error.
+ */
+const DECIMAL_MIN = 1.01;
+const DECIMAL_MAX = 20;
+
 /** Detect the notation used for one odds price. */
 export function detectOddsFormat(odd: string | number): OddsFormat {
-  // String patterns first --------------------------------------------------
+  // Strings first ---------------------------------------------------------
   if (typeof odd === 'string') {
     const trimmed = odd.trim();
 
-    if (/^\d+\s*\/\s*\d+$/.test(trimmed)) return 'fractional'; // 4/5
-    if (/^[+-]\d+$/.test(trimmed)) return 'american';              // –125, +150
+    // 4/5 or 11 / 4  → Fractional
+    if (/^\d+\s*\/\s*\d+$/.test(trimmed)) return 'fractional';
+    // +150 or -125   → American / Moneyline
+    if (/^[+-]\d+$/.test(trimmed)) return 'american';
 
     odd = parseFloat(trimmed);
     if (Number.isNaN(odd)) throw new Error(`Invalid odds value: ${trimmed}`);
   }
 
-  // Numeric heuristics -----------------------------------------------------
+  // Numeric heuristics ----------------------------------------------------
   const n = odd as number;
-  if (n >= 1) return 'decimal';             // 1.80
-  if (n > 0 && n < 1) return 'hongkong';    // 0.80 (HK|Malay +)
 
+  /*
+   * Heuristic table (feed quirks we’ve observed):
+   *  - Decimal odds should show a decimal point once they’re > 10 (books
+   *    rarely quote „11“ instead of „11.0“).
+   *  - Positive American prices often lose their + sign but are always ≥100.
+   */
+  if (n >= 100) return 'american';          // 110, 600, etc.
+
+  if (n >= 1 && Number.isInteger(n)) {
+    // Ambiguous 2 … 99 without sign or dot: treat as decimal *but* it will
+    // later be rejected if it falls outside sane ranges (see toDecimal).
+    return 'decimal';
+  }
+
+  if (n > 1) return 'decimal';              // 2.50, 5.75, … (has dot)
+  if (n > 0 && n < 1) return 'hongkong';    // 0.80, 0.25
+
+  // n < 0 -----------------------------------------------------------------
   const abs = Math.abs(n);
-  if (abs >= 100) return 'american';        // –125
-  if (abs > 1) return 'indonesian';         // –1.25
-  return 'malay';                           // –0.80
+  if (abs > 1) return 'indonesian';         // -1.25, -2.10
+  return 'malay';                           // -0.95, -0.75
 }
 
 /** Convert any supported odds notation to *Decimal* odds. */
-export function toDecimal(odd: string | number): number {
-  const format = detectOddsFormat(odd);
+export function toDecimal(raw: string | number): number {
+  const format = detectOddsFormat(raw);
+  let dec: number;
 
   switch (format) {
     case 'decimal':
-      return typeof odd === 'number' ? odd : parseFloat(odd);
+      dec = typeof raw === 'number' ? raw : parseFloat(raw);
+      break;
 
     case 'fractional': {
-      const [num, den] = (odd as string)
+      const [num, den] = (raw as string)
         .split('/')
         .map((p) => parseFloat(p.trim()));
-      return 1 + num / den;
+      dec = 1 + num / den;
+      break;
     }
 
     case 'american': {
-      const val = typeof odd === 'number' ? odd : parseInt(odd as string, 10);
-      return val > 0 ? 1 + val / 100 : 1 + 100 / Math.abs(val);
+      const val = typeof raw === 'number' ? raw : parseInt(raw as string, 10);
+      dec = val > 0 ? 1 + val / 100 : 1 + 100 / Math.abs(val);
+      break;
     }
 
     case 'hongkong': {
-      const hk = typeof odd === 'number' ? odd : parseFloat(odd);
-      return hk + 1;
+      const hk = typeof raw === 'number' ? raw : parseFloat(raw);
+      dec = hk + 1;
+      break;
     }
 
     case 'indonesian': {
-      const indo = typeof odd === 'number' ? odd : parseFloat(odd);
-      return indo > 0 ? indo + 1 : 1 + 1 / Math.abs(indo);
+      const indo = typeof raw === 'number' ? raw : parseFloat(raw);
+      dec = indo > 0 ? indo + 1 : 1 + 1 / Math.abs(indo);
+      break;
     }
 
     case 'malay': {
-      const malay = typeof odd === 'number' ? odd : parseFloat(odd);
-      return malay > 0 ? malay + 1 : 1 + 1 / Math.abs(malay);
+      const my = typeof raw === 'number' ? raw : parseFloat(raw);
+      dec = my > 0 ? my + 1 : 1 + 1 / Math.abs(my);
+      break;
     }
   }
+
+  // ── Sanity guardrails ──────────────────────────────────────────────────
+  if (dec < DECIMAL_MIN || dec > DECIMAL_MAX) {
+    throw new RangeError(`Suspicious decimal odd ${dec} derived from “${raw}”`);
+  }
+
+  return dec;
 }
 
 // ────────────────────────────────────────────────────────────
@@ -118,16 +161,14 @@ export type SurebetResult = {
 /**
  * Calculates sure‑bet stake allocation for a 2‑way market.
  *
- * Incoming odds are auto‑detected & converted to Decimal before maths.
- *
- * @param event       Sport event containing exactly two outcomes
- * @param totalStake  Total bankroll to distribute (e.g. 100 €)
+ * Odds are auto‑detected & converted to decimal; blatantly wrong prices are
+ * rejected early. We also dismiss "too‑good‑to‑be‑true" arbs (margin > 20 %).
  */
 export function calculateSurebetAllocation(
   event: SportEvent,
   totalStake: number,
 ): SurebetResult {
-  // Guard: must be exactly two outcomes -----------------------------------
+  // Guard: must be exactly two outcomes ----------------------------------
   if (event.outcomes.length !== 2) {
     return {
       isSurebet: false,
@@ -138,20 +179,31 @@ export function calculateSurebetAllocation(
     };
   }
 
-  // Normalise odds to Decimal ---------------------------------------------
-  const [raw1, raw2] = event.outcomes as [Outcome, Outcome];
-  const O1 = toDecimal(raw1.odd);
-  const O2 = toDecimal(raw2.odd);
+  // Convert odds — bail out on parsing/sanity errors ----------------------
+  let O1: number, O2: number;
+  try {
+    [O1, O2] = event.outcomes.map((o) => toDecimal(o.odd)) as [number, number];
+  } catch (err) {
+    return {
+      isSurebet: false,
+      payout: 0,
+      profit: 0,
+      surebetPercentage: 0,
+      message: (err as Error).message,
+    };
+  }
 
   const surebetPercentage = 1 / O1 + 1 / O2; // < 1 ⇒ arbitrage
+  const margin = 1 - surebetPercentage;      // our yield on stake (0.05 = 5 %)
 
-  if (surebetPercentage >= 1) {
+  // Filter unrealistic arbs (> 20 % margin usually means bad data) ---------
+  if (margin < 0.0001 || margin > 0.20) {
     return {
       isSurebet: false,
       payout: 0,
       profit: 0,
       surebetPercentage: parseFloat((surebetPercentage * 100).toFixed(2)),
-      message: 'No arbitrage opportunity for these odds.',
+      message: 'Arbitrage margin outside realistic bounds — likely bad feed.',
     };
   }
 
@@ -166,14 +218,14 @@ export function calculateSurebetAllocation(
     isSurebet: true,
     allocation: [
       {
-        outcome: raw1.outcome,
-        broker: raw1.broker,
+        outcome: event.outcomes[0].outcome,
+        broker: event.outcomes[0].broker,
         odd: parseFloat(O1.toFixed(2)),
         stake: parseFloat(stake1.toFixed(2)),
       },
       {
-        outcome: raw2.outcome,
-        broker: raw2.broker,
+        outcome: event.outcomes[1].outcome,
+        broker: event.outcomes[1].broker,
         odd: parseFloat(O2.toFixed(2)),
         stake: parseFloat(stake2.toFixed(2)),
       },
