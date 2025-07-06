@@ -1,7 +1,7 @@
 import { Actor } from 'apify';
+import { launchOptions as camoufoxLaunchOptions } from 'camoufox-js';
 import { PlaywrightCrawler } from 'crawlee';
 import { firefox } from 'playwright';
-import { launchOptions as camoufoxLaunchOptions } from 'camoufox-js';
 
 import { router } from './routes.js';
 import type { Input } from './types.js';
@@ -47,7 +47,6 @@ const crawler = new PlaywrightCrawler({
         }),
     },
 });
-
 
 // ────────────────────────────────────────────────────────────
 //  4. Go! (all URLs come from the input form)

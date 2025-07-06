@@ -1,15 +1,15 @@
-import { createPlaywrightRouter, Dataset } from 'crawlee';
 import { Actor } from 'apify';
 import * as cheerio from 'cheerio';
+import { createPlaywrightRouter, Dataset } from 'crawlee';
 
+import type { Outcome, SportEvent } from './surebet.js';
+import { calculateSurebetAllocation } from './surebet.js';
 import type { Input } from './types.js';
-import { calculateSurebetAllocation, SportEvent, Outcome } from './surebet.js';
 
 export const router = createPlaywrightRouter();
 
 // Count pushed events across all requests
 let eventsPushed = 0;
-
 
 // ---------------------------------------------------------------------------
 // Helper – parse Oddspedia sure-bet table (unchanged)
@@ -56,7 +56,7 @@ export function parseSurebets(html: string): SportEvent[] {
         // Find outcomes
         const outcomes: Outcome[] = [];
 
-        el.find('.btools-odd-mini').each((_, oddBlock) => {
+        el.find('.btools-odd-mini').each((_idx, oddBlock) => {
             const oddEl = $(oddBlock);
 
             const outcomeLabel = oddEl.find('.btools-odd-mini__header span').text().trim();
@@ -76,7 +76,7 @@ export function parseSurebets(html: string): SportEvent[] {
             outcomes.push({
                 outcome: outcomeLabel,
                 odd: oddValue,
-                broker: broker,
+                broker,
             });
         });
 
@@ -114,15 +114,9 @@ router.addDefaultHandler(async ({ page, log }) => {
     const events = parseSurebets(html);
 
     // Read full input once per request
-    const {
-        stake = 100,
-        minProfitPercentage = 1,
-        maxEvents = 0,
-    }: Input = (await Actor.getInput()) ?? {};
+    const { stake = 100, minProfitPercentage = 1, maxEvents = 0 }: Input = (await Actor.getInput()) ?? {};
 
-    log.info(
-        `Config → stake €${stake}, minProfit ${minProfitPercentage} %, maxEvents ${maxEvents || '∞'}`,
-    );
+    log.info(`Config → stake €${stake}, minProfit ${minProfitPercentage} %, maxEvents ${maxEvents || '∞'}`);
 
     for (const event of events) {
         if (maxEvents && eventsPushed >= maxEvents) {
@@ -132,8 +126,8 @@ router.addDefaultHandler(async ({ page, log }) => {
 
         const result = calculateSurebetAllocation(event, stake);
 
-        if (!result.isSurebet) {
-            result.message && log.debug(result.message);
+        if (!result.isSurebet && result.message) {
+            log.debug(result.message);
             continue;
         }
 

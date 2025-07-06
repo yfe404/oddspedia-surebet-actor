@@ -1,11 +1,11 @@
 /**
  * Types and helpers for sports‑betting arbitrage calculation
  *
- * Revision 4 — fixes false negatives for very large odds / huge‑margin arbs.
+ * Revision 4 — fixes false negatives for very large odds / huge‑margin arbs.
  *   • Positive‑integer “101”, “600”… are now **decimal** unless a sign is
- *     present *and* the value is a multiple of 5 (typical Moneyline style).
- *   • Removed the 20 % upper margin cap; we just warn but still return a
- *     sure‑bet when inverse odds sum < 1.
+ *     present *and* the value is a multiple of 5 (typical Moneyline style).
+ *   • Removed the 20% upper margin cap; we just warn but still return a
+ *     sure‑bet when inverse odds sum < 1.
  *   • Expanded DECIMAL_MAX so longshots (outrights, props) no longer throw.
  */
 
@@ -28,8 +28,8 @@ export function detectOddsFormat(odd: string | number): OddsFormat {
         const trimmed = odd.trim();
         if (/^\d+\s*\/\s*\d+$/.test(trimmed)) return 'fractional';
         if (/^[+-]\d+$/.test(trimmed)) return 'american'; // explicit sign
-        odd = parseFloat(trimmed);
-        if (Number.isNaN(odd)) throw new Error(`Invalid odds value: ${trimmed}`);
+        const parsedOdd = parseFloat(trimmed);
+        if (Number.isNaN(parsedOdd)) throw new Error(`Invalid odds value: ${trimmed}`);
     }
 
     const n = odd as number;
@@ -80,6 +80,9 @@ export function toDecimal(raw: string | number): number {
             dec = my > 0 ? my + 1 : 1 + 1 / Math.abs(my);
             break;
         }
+        default: {
+            throw Error('Unknown odd format');
+        }
     }
 
     if (dec < DECIMAL_MIN || dec > DECIMAL_MAX) {
@@ -111,12 +114,12 @@ export type SportEvent = {
 
 export type SurebetResult = {
     isSurebet: boolean;
-    allocation?: Array<{
+    allocation?: {
         outcome: string;
         broker: string;
         odd: number;
         stake: number;
-    }>;
+    }[];
     payout: number;
     profit: number;
     surebetPercentage: number;
@@ -164,7 +167,7 @@ export function calculateSurebetAllocation(event: SportEvent, totalStake: number
         };
     }
 
-    // — We DO allow >20 % margin now —
+    // — We DO allow >20% margin now —
     const payoutPerOutcome = totalStake / inverseSum;
     const allocation = event.outcomes.map((out, idx) => {
         const stake = payoutPerOutcome / decOdds[idx];
