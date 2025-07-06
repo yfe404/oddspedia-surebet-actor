@@ -1,13 +1,11 @@
-export type HttpMethod =
-    | 'GET' | 'HEAD' | 'POST' | 'PUT' | 'DELETE'
-    | 'TRACE' | 'OPTIONS' | 'CONNECT' | 'PATCH';
+export type HttpMethod = 'GET' | 'HEAD' | 'POST' | 'PUT' | 'DELETE' | 'TRACE' | 'OPTIONS' | 'CONNECT' | 'PATCH';
 
- export interface StartUrl {
-     url: string;
-     method?: HttpMethod;
-     headers?: Record<string, string>;
-     userData?: Record<string, unknown>;
- }
+export interface StartUrl {
+    url: string;
+    method?: HttpMethod;
+    headers?: Record<string, string>;
+    userData?: Record<string, unknown>;
+}
 
 export interface ProxyConfigurationInput {
     /** Use Apify proxy? (default true) */
@@ -24,8 +22,6 @@ export interface CrawlerOptionsInput {
     /** Per-page timeout in seconds */
     pageTimeoutSecs?: number;
 }
-
-
 
 export interface Input {
     /** Pages that list surebets */
