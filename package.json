@@ -9,6 +9,7 @@
 	"dependencies": {
 		"apify": "^3.4.2",
 		"camoufox-js": "^0.6.0",
+		"cheerio": "^1.1.0",
 		"crawlee": "^3.13.8",
 		"playwright": "1.53.1"
 	},
