@@ -1,157 +1,127 @@
 # Surebet Arbitrage Scraper
 
-An Apify Actor that:
-
-✅ Crawls surebet pages
-✅ Parses sports events and odds using Cheerio
-✅ Calculates surebet allocations and guaranteed profits
-✅ Saves results into an Apify Dataset for easy export (JSON, CSV, XLSX)
+**Apify Actor** that finds **2‑ or 3‑way** *sure‑bet* (arbitrage) opportunities **on Oddspedia**, calculates risk‑free stake splits and saves everything to an Apify Dataset ready for export (JSON / CSV / XLSX).
 
 ---
 
-## 🚀 How It Works
+## 🚀 Features
 
-This actor:
-
-1. Loads HTML pages via Playwright
-2. Parses all surebet matches (e.g. Tennis, Football, MMA, etc.)
-3. Extracts:
-    - Sport
-    - Country
-    - League
-    - Date and time
-    - Market (e.g. Home/Away, Over/Under)
-    - Team or player names
-    - Odds and bookmakers
-4. Calculates surebet allocations for **2-way markets**:
-    - Stake split
-    - Total payout
-    - Guaranteed profit
-    - Surebet percentage
-5. Saves everything as JSON records in an Apify dataset.
+| ✔                                   | Capability                                                                                                                             |
+| ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| **Crawl Oddspedia sure‑bet tables** | Works with the global and country-specific *Surebets* lists on Oddspedia. Other sites are not supported.                               |
+| **Camouflaged browser**             | Uses Playwright + Crawlee with Camoufox fingerprints & residential proxy by default.                                                   |
+| **Stake allocation**                | Splits your chosen **Total Stake** across outcomes in **2‑ or 3‑way markets** to lock in a *guaranteed profit* and reports the edge %. |
+| **Fully configurable**              | Profit filter, page concurrency, per‑page timeout, dataset size cap, custom proxy etc.                                                 |
+| **One‑click export**                | Download results in JSON, CSV, Excel or NDJSON, or stream via the Apify API.                                                           |
 
 ---
 
-## 📦 Input
+## 🛠 Input
 
-WIP
+All settings are defined in the actor’s **input form** (or `INPUT.json` when you run locally). Default values make the actor runnable out‑of‑the‑box.
 
----
+| Key                   | Type                                | Default                                                      | Description                                                                            |
+| --------------------- | ----------------------------------- | ------------------------------------------------------------ | -------------------------------------------------------------------------------------- |
+| `startUrls`           | `array` (📄 *Request List Sources*) | `["https://oddspedia.com/surebets"]`                         | Oddspedia URLs that list sure‑bet opportunities (global or regional).                  |
+| `stake`               | `integer`                           | `100`                                                        | Total money (in your currency) to distribute across outcomes when a sure‑bet is found. |
+| `minProfitPercentage` | `integer`                           | `5`                                                          | Ignore sure‑bets whose edge is below this % of the total stake.                        |
+| `maxEvents`           | `integer`                           | `0` (unlimited)                                              | Stop after this many events — handy for dev & testing.                                 |
+| `proxyConfiguration`  | `object` (🛡 Proxy editor)          | `{ useApifyProxy: true, apifyProxyGroups: ["RESIDENTIAL"] }` | Use Apify proxy or supply custom proxy URLs.                                           |
+| `crawlerOptions`      | `object` (📝 JSON editor)           | `{ maxConcurrency: 10, pageTimeoutSecs: 60 }`                | Advanced Crawlee / Playwright knobs.                                                   |
 
-## ✅ Output
-
-The actor saves results to a dataset with fields:
-
-| Field      | Description                                   |
-| ---------- | --------------------------------------------- |
-| url        | Source page URL                               |
-| sport      | Sport name (e.g. Tennis, Football)            |
-| country    | Country or region                             |
-| league     | Tournament or league name                     |
-| date       | Match date and time                           |
-| market     | Market type (e.g. Home/Away, Over/Under)      |
-| home       | Home team or player                           |
-| away       | Away team or player                           |
-| outcomes   | List of odds and bookmakers for each outcome  |
-| allocation | Calculated surebet stakes and profit (if any) |
-
-Example dataset record:
+### Example `INPUT.json`
 
 ```json
 {
-  "url": "https://example.com",
-  "sport": "Tennis",
-  "country": "United Kingdom",
-  "league": "ATP Wimbledon",
-  "date": "1st Jul 25, 16:50",
-  "market": "Home/Away",
-  "home": "Jack Draper",
-  "away": "Sebastian Baez",
-  "outcomes": [
-    {
-      "outcome": "Home",
-      "odd": 2,
-      "broker": "tooniebet"
-    },
-    {
-      "outcome": "Away",
-      "odd": 34,
-      "broker": "boylesports"
-    }
+  "startUrls": [
+    { "url": "https://oddspedia.com/surebets", "userData": { "tag": "global" } },
+    { "url": "https://oddspedia.com/au/surebets" }
   ],
-  "allocation": {
-    "isSurebet": true,
-    "allocation": [
-      {
-        "outcome": "Home",
-        "broker": "tooniebet",
-        "odd": 2,
-        "stake": 94.44
-      },
-      {
-        "outcome": "Away",
-        "broker": "boylesports",
-        "odd": 34,
-        "stake": 5.56
-      }
-    ],
-    "payout": 188.89,
-    "profit": 88.89,
-    "surebetPercentage": 52.94
+  "stake": 250,
+  "minProfitPercentage": 3,
+  "maxEvents": 50,
+  "proxyConfiguration": {
+    "useApifyProxy": true,
+    "apifyProxyGroups": ["RESIDENTIAL"]
+  },
+  "crawlerOptions": {
+    "maxConcurrency": 5,
+    "pageTimeoutSecs": 45
   }
 }
 ```
 
 ---
 
-## 🛠 Configuration
+## 📤 Output
 
-The actor logic lives in:
+Each dataset item has two layers:
 
-* `main.ts` → Crawler logic and orchestration
-* `surebet.ts` → Calculation of surebet allocations
-* `routes.ts` → Request routing
+1. **Event Info** – sport, league, date, teams, raw odds.
+2. **Allocation** – stake split, edge %, profit €.
+
+| Field                          | Example                                                        | Notes                                          |
+| ------------------------------ | -------------------------------------------------------------- | ---------------------------------------------- |
+| `sport`                        | `Tennis`                                                       | Parsed from sure‑bet row.                      |
+| `league`                       | `ATP Wimbledon`                                                |                                                |
+| `date`                         | `2025-07-01T14:50:00.000Z`                                     | ISO 8601.                                      |
+| `outcomes`                     | `[ { "outcome": "Home", "odd": 2.1, "broker": "bet365" }, … ]` | Raw odds list. Works for 2‑ and 3‑way markets. |
+| `allocation.isSurebet`         | `true`                                                         | `false` if edge < `minProfitPercentage`.       |
+| `allocation.allocation`        | `[ { "outcome": "Home", "stake": 94.44 }, … ]`                 | Stake per leg.                                 |
+| `allocation.profit`            | `8.89`                                                         | Guaranteed profit in *same units* as `stake`.  |
+| `allocation.surebetPercentage` | `3.56`                                                         | Edge %.                                        |
+
+> **Tip:** In the Apify UI click **Dataset → Preview → Export** to download in your favourite format, or call:
+>
+> ```
+> https://api.apify.com/v2/datasets/<DATASET_ID>/items?format=json
+> ```
 
 ---
 
-## Limitations
+## ⚙️ Internals
 
-* No built-in actor input schema—modify `main.ts` to change URLs or stake amount.
+| File         | Purpose                                                                        |
+| ------------ | ------------------------------------------------------------------------------ |
+| `main.ts`    | Boots PlaywrightCrawler, handles proxy, concurrency, input parsing.            |
+| `routes.ts`  | Parses sure‑bet rows, applies filters, pushes events to dataset.               |
+| `surebet.ts` | Math helper – calculates stake split & profit (supports 2‑ and 3‑way markets). |
+| `types.ts`   | Type‑safe mapping of `input_schema.json`.                                      |
 
 ---
 
-## How to Run
+## 🏃‍♀️ Quick Start
 
-Locally:
+### In the Apify UI
+
+1. Click **Use Actor** → *Accept defaults* → **Run**.
+2. Results appear in **Dataset** in a few seconds.
+
+### Locally (Node 18 +)
 
 ```bash
+# 1. Install deps & compile TypeScript
 npm install
 npm run build
-npm start
-```
 
-Or deploy to Apify and run as an actor.
+# 2. Run with defaults (uses Oddspedia & Apify residential proxy)
+apify run --purge
 
----
-
-## Data Export
-
-On Apify, download results as:
-
-* JSON
-* CSV
-* Excel (XLSX)
-* NDJSON
-
-Via API:
-
-```
-https://api.apify.com/v2/datasets/<DATASET_ID>/items?format=json
+# 3. Custom run via INPUT.json
+cp examples/INPUT.sample.json INPUT.json   # or craft your own
+apify run --purge
 ```
 
 ---
 
-## License
+## 🧪 Testing Tips
+
+* Set `maxEvents` to a low number (e.g. `3`) and `maxConcurrency` to `1` to iterate quickly.
+* Use `datasetPreview` in the Apify console to inspect live records.
+* Disable proxy (`useApifyProxy: false`) only if your IP isn’t blocked by the target site.
+
+---
+
+## 📜 License
 
 MIT
-
