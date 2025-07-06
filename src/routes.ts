@@ -1,11 +1,19 @@
-import { KeyValueStore, createPlaywrightRouter, Dataset } from 'crawlee';
+import { createPlaywrightRouter, Dataset } from 'crawlee';
 import { Actor } from 'apify';
-import type { Input } from './types.js';
-
-import { SportEvent, Outcome, calculateSurebetAllocation } from './surebet.js';
-export const router = createPlaywrightRouter();
 import * as cheerio from 'cheerio';
 
+import type { Input } from './types.js';
+import { calculateSurebetAllocation, SportEvent, Outcome } from './surebet.js';
+
+export const router = createPlaywrightRouter();
+
+// Count pushed events across all requests
+let eventsPushed = 0;
+
+
+// ---------------------------------------------------------------------------
+// Helper – parse Oddspedia sure-bet table (unchanged)
+// ---------------------------------------------------------------------------
 export function parseSurebets(html: string): SportEvent[] {
     const $ = cheerio.load(html);
 
@@ -90,9 +98,12 @@ export function parseSurebets(html: string): SportEvent[] {
     return events;
 }
 
+// ---------------------------------------------------------------------------
+// Default handler
+// ---------------------------------------------------------------------------
 router.addDefaultHandler(async ({ page, log }) => {
-    // Wait until Oddspedia injects sure-bet rows (15 s max)
     try {
+        // Wait until Oddspedia injects sure-bet rows (15 s max)
         await page.waitForSelector('.btools-match', { timeout: 15_000 });
     } catch {
         log.warning('No .btools-match elements found – skipping page');
@@ -101,32 +112,39 @@ router.addDefaultHandler(async ({ page, log }) => {
 
     const html = await page.content();
     const events = parseSurebets(html);
-    const input: Input = (await Actor.getInput()) ?? {};
-    const minProfitPercentage = input.minProfitPercentage ?? 1;
 
-    //log minProfit Percentage from userData
-    log.info(`Minimum profit percentage: ${minProfitPercentage}%`);
+    // Read full input once per request
+    const {
+        stake = 100,
+        minProfitPercentage = 1,
+        maxEvents = 0,
+    }: Input = (await Actor.getInput()) ?? {};
 
-    // default to 1 % if the value was not supplied
-    const stake = 100;
+    log.info(
+        `Config → stake €${stake}, minProfit ${minProfitPercentage} %, maxEvents ${maxEvents || '∞'}`,
+    );
 
     for (const event of events) {
+        if (maxEvents && eventsPushed >= maxEvents) {
+            log.debug('Reached maxEvents limit – further events ignored.');
+            break;
+        }
+
         const result = calculateSurebetAllocation(event, stake);
 
-        if (!result.isSurebet && result.message) {
-            log.debug(result.message);
+        if (!result.isSurebet) {
+            result.message && log.debug(result.message);
             continue;
         }
 
         const profitPct = (result.profit / stake) * 100;
-
         if (profitPct < minProfitPercentage) {
-            log.debug(`Edge ${profitPct.toFixed(2)} % < ${minProfitPercentage}% ➝ ignored`);
+            log.debug(`Edge ${profitPct.toFixed(2)} % < ${minProfitPercentage} % – ignored`);
             continue;
         }
 
         log.info(`✅ ${event.home} vs ${event.away} — edge ${profitPct.toFixed(2)} %`);
-
         await Dataset.pushData({ ...event, result });
+        eventsPushed++;
     }
 });
