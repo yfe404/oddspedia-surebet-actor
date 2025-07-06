@@ -1,15 +1,63 @@
 {
-    "title": "PlaywrightCrawler Template",
+    "title": "Surebet Arbitrage Scraper – Input",
     "type": "object",
     "schemaVersion": 1,
     "properties": {
-        "minProfitPercentage": {
-            "title": "Minimum Profit Percentage",
+        "startUrls": {
+            "title": "Start URLs",
+            "type": "array",
+            "editor": "requestListSources",
+            "description": "Pages that list sure-bet opportunities. The default is Oddspedia’s global surebets table.",
+            "prefill": [{ "url": "https://oddspedia.com/surebets" }],
+            "default": [{ "url": "https://oddspedia.com/surebets" }]
+        },
+
+        "stake": {
+            "title": "Total Stake (€)",
             "type": "integer",
-            "description": "Ignore surebets whose expected profit is lower than this percentage of the total stake (e.g. 5 = 5 %).",
-            "default": 1,
+            "description": "Money you are willing to distribute across both outcomes when a surebet is found.",
+            "default": 100,
+            "minimum": 1
+        },
+
+        "minProfitPercentage": {
+            "title": "Minimum Profit (%)",
+            "type": "integer",
+            "description": "Ignore surebets whose expected profit is lower than this percentage of the total stake.",
+            "default": 5,
             "minimum": 0
+        },
+
+        "maxEvents": {
+            "title": "Maximum Events",
+            "type": "integer",
+            "description": "Stop after processing this many events (handy for testing). 0 = unlimited.",
+            "default": 0,
+            "minimum": 0
+        },
+
+        "proxyConfiguration": {
+            "title": "Proxy configuration",
+            "type": "object",
+            "description": "Use an Apify proxy group or custom proxies to avoid blocks.",
+            "editor": "proxy",
+            "default": {
+                "useApifyProxy": true,
+                "apifyProxyGroups": ["RESIDENTIAL"]
+            }
+        },
+
+        "crawlerOptions": {
+            "title": "Crawler Options",
+            "type": "object",
+            "editor": "json",
+            "description": "Advanced Playwright & Crawlee settings.",
+            "default": {
+                "maxConcurrency": 10,
+                "pageTimeoutSecs": 60
+            }
         }
     },
-    "required": ["minProfitPercentage"]
+
+    "required": ["startUrls", "stake", "minProfitPercentage"]
 }
