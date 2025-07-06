@@ -16,7 +16,6 @@ import { firefox } from 'playwright';
 // note that we need to use `.js` even when inside TS files
 import { router } from './routes.js';
 
-
 interface Input {
     startUrls: {
         url: string;
@@ -30,13 +29,12 @@ interface Input {
 // Initialize the Apify SDK
 await Actor.init();
 
-
 let proxyConfiguration = undefined;
 
 if (Actor.isAtHome()) {
-        proxyConfiguration = await Actor.createProxyConfiguration({
+    proxyConfiguration = await Actor.createProxyConfiguration({
         groups: ['RESIDENTIAL'],
-        countryCode: 'FR'
+        countryCode: 'FR',
     });
 }
 
