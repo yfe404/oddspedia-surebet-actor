@@ -1,16 +1,15 @@
 {
-  "title": "PlaywrightCrawler Template",
-  "type": "object",
-  "schemaVersion": 1,
-  "properties": {
-    "minProfitPercentage": {
-      "title": "Minimum Profit Percentage",
-      "type": "integer",
-      "description": "Ignore surebets whose expected profit is lower than this percentage of the total stake (e.g. 5 = 5 %).",
-      "default": 1,
-      "minimum": 0
-    }
-  },
-  "required": ["minProfitPercentage"]
+    "title": "PlaywrightCrawler Template",
+    "type": "object",
+    "schemaVersion": 1,
+    "properties": {
+        "minProfitPercentage": {
+            "title": "Minimum Profit Percentage",
+            "type": "integer",
+            "description": "Ignore surebets whose expected profit is lower than this percentage of the total stake (e.g. 5 = 5 %).",
+            "default": 1,
+            "minimum": 0
+        }
+    },
+    "required": ["minProfitPercentage"]
 }
-
