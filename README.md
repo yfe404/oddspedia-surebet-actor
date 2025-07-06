@@ -116,8 +116,6 @@ The actor logic lives in:
 
 ## Limitations
 
-* Currently supports **2-way markets** only (Home/Away, Over/Under).
-* No handling of 3-way surebets (e.g. 1X2 with Draw) yet.
 * No built-in actor input schema—modify `main.ts` to change URLs or stake amount.
 
 ---
