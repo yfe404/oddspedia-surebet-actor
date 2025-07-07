@@ -1,16 +1,16 @@
 # Surebet Arbitrage Scraper
 
-**Apify Actor** that finds **2‑ or 3‑way** *sure‑bet* (arbitrage) opportunities **on Oddspedia**, calculates risk‑free stake splits and saves everything to an Apify Dataset ready for export (JSON / CSV / XLSX).
+**Apify Actor** that finds **2‑ or 3‑way** _sure‑bet_ (arbitrage) opportunities **on Oddspedia**, calculates risk‑free stake splits and saves everything to an Apify Dataset ready for export (JSON / CSV / XLSX).
 
 ---
 
 ## 🚀 Features
 
-| ✔                                   | Capability                                                                                                                             |
+| ✔                                  | Capability                                                                                                                             |
 | ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| **Crawl Oddspedia sure‑bet tables** | Works with the global and country-specific *Surebets* lists on Oddspedia. Other sites are not supported.                               |
+| **Crawl Oddspedia sure‑bet tables** | Works with the global and country-specific _Surebets_ lists on Oddspedia. Other sites are not supported.                               |
 | **Camouflaged browser**             | Uses Playwright + Crawlee with Camoufox fingerprints & residential proxy by default.                                                   |
-| **Stake allocation**                | Splits your chosen **Total Stake** across outcomes in **2‑ or 3‑way markets** to lock in a *guaranteed profit* and reports the edge %. |
+| **Stake allocation**                | Splits your chosen **Total Stake** across outcomes in **2‑ or 3‑way markets** to lock in a _guaranteed profit_ and reports the edge %. |
 | **Fully configurable**              | Profit filter, page concurrency, per‑page timeout, dataset size cap, custom proxy etc.                                                 |
 | **One‑click export**                | Download results in JSON, CSV, Excel or NDJSON, or stream via the Apify API.                                                           |
 
@@ -22,7 +22,7 @@ All settings are defined in the actor’s **input form** (or `INPUT.json` when y
 
 | Key                   | Type                                | Default                                                      | Description                                                                            |
 | --------------------- | ----------------------------------- | ------------------------------------------------------------ | -------------------------------------------------------------------------------------- |
-| `startUrls`           | `array` (📄 *Request List Sources*) | `["https://oddspedia.com/surebets"]`                         | Oddspedia URLs that list sure‑bet opportunities (global or regional).                  |
+| `startUrls`           | `array` (📄 _Request List Sources_) | `["https://oddspedia.com/surebets"]`                         | Oddspedia URLs that list sure‑bet opportunities (global or regional).                  |
 | `stake`               | `integer`                           | `100`                                                        | Total money (in your currency) to distribute across outcomes when a sure‑bet is found. |
 | `minProfitPercentage` | `integer`                           | `5`                                                          | Ignore sure‑bets whose edge is below this % of the total stake.                        |
 | `maxEvents`           | `integer`                           | `0` (unlimited)                                              | Stop after this many events — handy for dev & testing.                                 |
@@ -33,21 +33,21 @@ All settings are defined in the actor’s **input form** (or `INPUT.json` when y
 
 ```json
 {
-  "startUrls": [
-    { "url": "https://oddspedia.com/surebets", "userData": { "tag": "global" } },
-    { "url": "https://oddspedia.com/au/surebets" }
-  ],
-  "stake": 250,
-  "minProfitPercentage": 3,
-  "maxEvents": 50,
-  "proxyConfiguration": {
-    "useApifyProxy": true,
-    "apifyProxyGroups": ["RESIDENTIAL"]
-  },
-  "crawlerOptions": {
-    "maxConcurrency": 5,
-    "pageTimeoutSecs": 45
-  }
+    "startUrls": [
+        { "url": "https://oddspedia.com/surebets", "userData": { "tag": "global" } },
+        { "url": "https://oddspedia.com/au/surebets" }
+    ],
+    "stake": 250,
+    "minProfitPercentage": 3,
+    "maxEvents": 50,
+    "proxyConfiguration": {
+        "useApifyProxy": true,
+        "apifyProxyGroups": ["RESIDENTIAL"]
+    },
+    "crawlerOptions": {
+        "maxConcurrency": 5,
+        "pageTimeoutSecs": 45
+    }
 }
 ```
 
@@ -68,7 +68,7 @@ Each dataset item has two layers:
 | `outcomes`                     | `[ { "outcome": "Home", "odd": 2.1, "broker": "bet365" }, … ]` | Raw odds list. Works for 2‑ and 3‑way markets. |
 | `allocation.isSurebet`         | `true`                                                         | `false` if edge < `minProfitPercentage`.       |
 | `allocation.allocation`        | `[ { "outcome": "Home", "stake": 94.44 }, … ]`                 | Stake per leg.                                 |
-| `allocation.profit`            | `8.89`                                                         | Guaranteed profit in *same units* as `stake`.  |
+| `allocation.profit`            | `8.89`                                                         | Guaranteed profit in _same units_ as `stake`.  |
 | `allocation.surebetPercentage` | `3.56`                                                         | Edge %.                                        |
 
 > **Tip:** In the Apify UI click **Dataset → Preview → Export** to download in your favourite format, or call:
@@ -94,7 +94,7 @@ Each dataset item has two layers:
 
 ### In the Apify UI
 
-1. Click **Use Actor** → *Accept defaults* → **Run**.
+1. Click **Use Actor** → _Accept defaults_ → **Run**.
 2. Results appear in **Dataset** in a few seconds.
 
 ### Locally (Node 18 +)
@@ -116,9 +116,9 @@ apify run --purge
 
 ## 🧪 Testing Tips
 
-* Set `maxEvents` to a low number (e.g. `3`) and `maxConcurrency` to `1` to iterate quickly.
-* Use `datasetPreview` in the Apify console to inspect live records.
-* Disable proxy (`useApifyProxy: false`) only if your IP isn’t blocked by the target site.
+- Set `maxEvents` to a low number (e.g. `3`) and `maxConcurrency` to `1` to iterate quickly.
+- Use `datasetPreview` in the Apify console to inspect live records.
+- Disable proxy (`useApifyProxy: false`) only if your IP isn’t blocked by the target site.
 
 ---
 

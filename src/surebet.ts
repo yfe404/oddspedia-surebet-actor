@@ -1,12 +1,5 @@
 /**
  * Types and helpers for sports‑betting arbitrage calculation
- *
- * Revision 4 — fixes false negatives for very large odds / huge‑margin arbs.
- *   • Positive‑integer “101”, “600”… are now **decimal** unless a sign is
- *     present *and* the value is a multiple of 5 (typical Moneyline style).
- *   • Removed the 20% upper margin cap; we just warn but still return a
- *     sure‑bet when inverse odds sum < 1.
- *   • Expanded DECIMAL_MAX so longshots (outrights, props) no longer throw.
  */
 
 // ────────────────────────────────────────────────────────────
@@ -92,7 +85,7 @@ export function toDecimal(raw: string | number): number {
 }
 
 // ────────────────────────────────────────────────────────────
-//  Core data structures (unchanged)
+//  Core data structures
 // ────────────────────────────────────────────────────────────
 
 export type Outcome = {
