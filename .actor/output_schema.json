@@ -1,0 +1,84 @@
+{
+    "title": "Surebet Arbitrage Scraper – Output",
+    "type": "object",
+    "schemaVersion": 1,
+
+    "properties": {
+        "sport": {
+            "title": "Sport",
+            "type": "string"
+        },
+
+        "league": {
+            "title": "League",
+            "type": "string"
+        },
+
+        "date": {
+            "title": "Event Date",
+            "type": "string",
+            "format": "date-time",
+            "description": "Kick-off / start time in ISO-8601 (UTC)."
+        },
+
+        "home": {
+            "title": "Home Team / Player",
+            "type": "string"
+        },
+
+        "away": {
+            "title": "Away Team / Player",
+            "type": "string"
+        },
+
+        "outcomes": {
+            "title": "Outcomes (raw odds)",
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "outcome": { "type": "string", "title": "Outcome name" },
+                    "odd": { "type": "number", "title": "Decimal odd" },
+                    "broker": { "type": "string", "title": "Bookmaker" }
+                },
+                "required": ["outcome", "odd", "broker"]
+            }
+        },
+
+        "allocation": {
+            "title": "Calculated Allocation",
+            "type": "object",
+            "properties": {
+                "isSurebet": {
+                    "title": "Is Sure-bet",
+                    "type": "boolean"
+                },
+                "allocation": {
+                    "title": "Stake split per outcome",
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "outcome": { "type": "string", "title": "Outcome" },
+                            "stake": { "type": "number", "title": "Stake" }
+                        },
+                        "required": ["outcome", "stake"]
+                    }
+                },
+                "profit": {
+                    "title": "Guaranteed Profit",
+                    "type": "number",
+                    "description": "Absolute profit in the same units as total stake."
+                },
+                "surebetPercentage": {
+                    "title": "Edge %",
+                    "type": "number",
+                    "description": "Expected profit as a percentage of total stake."
+                }
+            },
+            "required": ["isSurebet", "profit", "surebetPercentage"]
+        }
+    },
+
+    "required": ["sport", "league", "date", "outcomes", "allocation"]
+}
