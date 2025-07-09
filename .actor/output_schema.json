@@ -1,60 +1,56 @@
 {
-    "actorSpecification": 1,
-    "schemaVersion": 1,
-    "title": "Surebet Arbitrage Scraper – Output",
-    "type": "object",
+  "actorSpecification": 1,
+  "schemaVersion": 1,
+  "title": "Surebet Arbitrage Scraper – Output",
+  "type": "object",
 
-    "properties": {
-        "sport": { "title": "Sport", "type": "string" },
-        "league": { "title": "League", "type": "string" },
+  "fields": {
+    "sport":   { "title": "Sport",  "type": "string" },
+    "league":  { "title": "League", "type": "string" },
 
-        "date": {
-            "title": "Event Date",
-            "type": "string",
-            "format": "date-time"
-        },
-
-        "home": { "title": "Home Team / Player", "type": "string" },
-        "away": { "title": "Away Team / Player", "type": "string" },
-
-        "outcomes": {
-            "title": "Outcomes (raw odds)",
-            "type": "array",
-            "items": {
-                "type": "object",
-                "properties": {
-                    "outcome": { "type": "string" },
-                    "odd": { "type": "number" },
-                    "broker": { "type": "string" }
-                },
-                "required": ["outcome", "odd", "broker"]
-            }
-        },
-
-        "allocation": {
-            "title": "Calculated Allocation",
-            "type": "object",
-            "properties": {
-                "isSurebet": { "type": "boolean" },
-
-                "allocation": {
-                    "type": "array",
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "outcome": { "type": "string" },
-                            "stake": { "type": "number" }
-                        },
-                        "required": ["outcome", "stake"]
-                    }
-                },
-
-                "profit": { "type": "number" },
-                "surebetPercentage": { "type": "number" }
-            },
-            "required": ["isSurebet", "profit", "surebetPercentage"]
-        }
+    "date": {
+      "title": "Event Date (UTC)",
+      "type": "string",
+      "format": "date-time"
     },
 
-    "required": ["sport", "league", "date", "outcomes", "allocation"]
+    "home": { "title": "Home Team / Player", "type": "string" },
+    "away": { "title": "Away Team / Player", "type": "string" },
+
+    "outcomes": {
+      "title": "Outcomes (raw odds)",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "fields": {
+          "outcome": { "type": "string", "title": "Outcome" },
+          "odd":     { "type": "number", "title": "Decimal Odd" },
+          "broker":  { "type": "string", "title": "Bookmaker" }
+        }
+      }
+    },
+
+    "allocation": {
+      "title": "Calculated Allocation",
+      "type": "object",
+      "fields": {
+        "isSurebet": { "type": "boolean", "title": "Is Sure-bet" },
+
+        "allocation": {
+          "title": "Stake split per outcome",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "fields": {
+              "outcome": { "type": "string", "title": "Outcome" },
+              "stake":   { "type": "number", "title": "Stake" }
+            }
+          }
+        },
+
+        "profit":            { "type": "number", "title": "Guaranteed Profit" },
+        "surebetPercentage": { "type": "number", "title": "Edge %" }
+      }
+    }
+  }
 }
