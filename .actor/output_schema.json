@@ -1,8 +1,6 @@
 {
   "actorSpecification": 1,
-  "schemaVersion": 1,
   "title": "Surebet Arbitrage Scraper – Output",
-  "type": "object",
 
   "fields": {
     "sport":   { "title": "Sport",  "type": "string" },
@@ -23,9 +21,9 @@
       "items": {
         "type": "object",
         "fields": {
-          "outcome": { "type": "string", "title": "Outcome" },
-          "odd":     { "type": "number", "title": "Decimal Odd" },
-          "broker":  { "type": "string", "title": "Bookmaker" }
+          "outcome": { "type": "string" },
+          "odd":     { "type": "number" },
+          "broker":  { "type": "string" }
         }
       }
     },
@@ -34,22 +32,21 @@
       "title": "Calculated Allocation",
       "type": "object",
       "fields": {
-        "isSurebet": { "type": "boolean", "title": "Is Sure-bet" },
+        "isSurebet": { "type": "boolean" },
 
         "allocation": {
-          "title": "Stake split per outcome",
           "type": "array",
           "items": {
             "type": "object",
             "fields": {
-              "outcome": { "type": "string", "title": "Outcome" },
-              "stake":   { "type": "number", "title": "Stake" }
+              "outcome": { "type": "string" },
+              "stake":   { "type": "number" }
             }
           }
         },
 
-        "profit":            { "type": "number", "title": "Guaranteed Profit" },
-        "surebetPercentage": { "type": "number", "title": "Edge %" }
+        "profit":            { "type": "number" },
+        "surebetPercentage": { "type": "number" }
       }
     }
   }
