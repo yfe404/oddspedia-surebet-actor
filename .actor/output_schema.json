@@ -1,53 +1,53 @@
 {
-  "actorSpecification": 1,
-  "title": "Surebet Arbitrage Scraper – Output",
+    "actorSpecification": 1,
+    "title": "Surebet Arbitrage Scraper – Output",
 
-  "fields": {
-    "sport":   { "title": "Sport",  "type": "string" },
-    "league":  { "title": "League", "type": "string" },
+    "fields": {
+        "sport": { "title": "Sport", "type": "string" },
+        "league": { "title": "League", "type": "string" },
 
-    "date": {
-      "title": "Event Date (UTC)",
-      "type": "string",
-      "format": "date-time"
-    },
-
-    "home": { "title": "Home Team / Player", "type": "string" },
-    "away": { "title": "Away Team / Player", "type": "string" },
-
-    "outcomes": {
-      "title": "Outcomes (raw odds)",
-      "type": "array",
-      "items": {
-        "type": "object",
-        "fields": {
-          "outcome": { "type": "string" },
-          "odd":     { "type": "number" },
-          "broker":  { "type": "string" }
-        }
-      }
-    },
-
-    "allocation": {
-      "title": "Calculated Allocation",
-      "type": "object",
-      "fields": {
-        "isSurebet": { "type": "boolean" },
-
-        "allocation": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "fields": {
-              "outcome": { "type": "string" },
-              "stake":   { "type": "number" }
-            }
-          }
+        "date": {
+            "title": "Event Date (UTC)",
+            "type": "string",
+            "format": "date-time"
         },
 
-        "profit":            { "type": "number" },
-        "surebetPercentage": { "type": "number" }
-      }
+        "home": { "title": "Home Team / Player", "type": "string" },
+        "away": { "title": "Away Team / Player", "type": "string" },
+
+        "outcomes": {
+            "title": "Outcomes (raw odds)",
+            "type": "array",
+            "items": {
+                "type": "object",
+                "fields": {
+                    "outcome": { "type": "string" },
+                    "odd": { "type": "number" },
+                    "broker": { "type": "string" }
+                }
+            }
+        },
+
+        "allocation": {
+            "title": "Calculated Allocation",
+            "type": "object",
+            "fields": {
+                "isSurebet": { "type": "boolean" },
+
+                "allocation": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "fields": {
+                            "outcome": { "type": "string" },
+                            "stake": { "type": "number" }
+                        }
+                    }
+                },
+
+                "profit": { "type": "number" },
+                "surebetPercentage": { "type": "number" }
+            }
+        }
     }
-  }
 }

@@ -38,6 +38,22 @@ const crawler = new PlaywrightCrawler({
     requestHandler: router,
     maxConcurrency: crawlerOptions.maxConcurrency ?? 10,
     navigationTimeoutSecs: crawlerOptions.pageTimeoutSecs ?? 60,
+    preNavigationHooks: [
+            async ({ page, request }) => {
+                // Figure out which domain to scope the cookie to:
+                const { hostname: domain } = new URL(request.url);
+
+                await page.context().addCookies([{
+                    name:     'user_odds_format',
+                    value:    'decimal',
+                    domain,             // e.g. "www.example.com"
+                    path:     '/',
+                    httpOnly: true,
+                    secure:   true,
+                    sameSite: 'Lax',    // Plays nicely with most servers
+                }]);
+            },
+        ],
     launchContext: {
         launcher: firefox,
         launchOptions: await camoufoxLaunchOptions({
