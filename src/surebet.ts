@@ -3,88 +3,6 @@
  */
 
 // ────────────────────────────────────────────────────────────
-//  Odds‑format detection & conversion → Decimal
-// ────────────────────────────────────────────────────────────
-
-export type OddsFormat = 'decimal' | 'fractional' | 'american' | 'hongkong' | 'indonesian' | 'malay';
-
-/**
- * Guardrails – values way outside these will still be flagged, but we loosen
- * the upper bound because outrights can price at 100‑to‑1 or more.
- */
-const DECIMAL_MIN = 1.01;
-const DECIMAL_MAX = 1_000;
-
-/** Detect the notation used for one odds price. */
-export function detectOddsFormat(odd: string | number): OddsFormat {
-    if (typeof odd === 'string') {
-        const trimmed = odd.trim();
-        if (/^\d+\s*\/\s*\d+$/.test(trimmed)) return 'fractional';
-        if (/^[+-]\d+$/.test(trimmed)) return 'american'; // explicit sign
-        const parsedOdd = parseFloat(trimmed);
-        if (Number.isNaN(parsedOdd)) throw new Error(`Invalid odds value: ${trimmed}`);
-    }
-
-    const n = odd as number;
-
-    // Positive integers ≥100 could be decimal (longshot) or moneyline.
-    // Heuristic: American odds are almost always multiples of 5;
-    // if not, treat as decimal.
-    if (n >= 100 && Number.isInteger(n)) {
-        return n % 5 === 0 ? 'american' : 'decimal';
-    }
-
-    if (n >= 1) return 'decimal'; // 1.95, 5.6, etc.
-    if (n > 0 && n < 1) return 'hongkong';
-
-    const abs = Math.abs(n);
-    if (abs > 1) return 'indonesian';
-    return 'malay';
-}
-
-/** Convert any supported odds notation to *Decimal* odds. */
-export function toDecimal(raw: string | number): number {
-    const format = detectOddsFormat(raw);
-    let dec: number;
-    switch (format) {
-        case 'decimal':
-            dec = typeof raw === 'number' ? raw : parseFloat(raw);
-            break;
-        case 'fractional': {
-            const [num, den] = (raw as string).split('/').map((p) => parseFloat(p.trim()));
-            dec = 1 + num / den;
-            break;
-        }
-        case 'american': {
-            const val = typeof raw === 'number' ? raw : parseInt(raw as string, 10);
-            dec = val > 0 ? 1 + val / 100 : 1 + 100 / Math.abs(val);
-            break;
-        }
-        case 'hongkong':
-            dec = (typeof raw === 'number' ? raw : parseFloat(raw)) + 1;
-            break;
-        case 'indonesian': {
-            const indo = typeof raw === 'number' ? raw : parseFloat(raw);
-            dec = indo > 0 ? indo + 1 : 1 + 1 / Math.abs(indo);
-            break;
-        }
-        case 'malay': {
-            const my = typeof raw === 'number' ? raw : parseFloat(raw);
-            dec = my > 0 ? my + 1 : 1 + 1 / Math.abs(my);
-            break;
-        }
-        default: {
-            throw Error('Unknown odd format');
-        }
-    }
-
-    if (dec < DECIMAL_MIN || dec > DECIMAL_MAX) {
-        throw new RangeError(`Suspicious decimal odd ${dec} derived from “${raw}”`);
-    }
-    return dec;
-}
-
-// ────────────────────────────────────────────────────────────
 //  Core data structures
 // ────────────────────────────────────────────────────────────
 
@@ -124,6 +42,11 @@ export type SurebetResult = {
 // ────────────────────────────────────────────────────────────
 
 export function calculateSurebetAllocation(event: SportEvent, totalStake: number): SurebetResult {
+    console.log('Calculating surebet for event:', event);
+    console.log(
+        'Event odds:',
+        event.outcomes.map((o) => o.odd),
+    );
     const n = event.outcomes.length;
     if (n < 2 || n > 3) {
         return {
@@ -138,7 +61,7 @@ export function calculateSurebetAllocation(event: SportEvent, totalStake: number
     // Convert odds with safety ---------------------------------------------
     let decOdds: number[];
     try {
-        decOdds = event.outcomes.map((o) => toDecimal(o.odd));
+        decOdds = event.outcomes.map((o) => (typeof o.odd === 'number' ? o.odd : parseFloat(o.odd as string)));
     } catch (err) {
         return {
             isSurebet: false,
@@ -174,6 +97,7 @@ export function calculateSurebetAllocation(event: SportEvent, totalStake: number
 
     const profit = payoutPerOutcome - totalStake;
 
+    console.log('Surebet allocation:', allocation);
     return {
         isSurebet: true,
         allocation,
